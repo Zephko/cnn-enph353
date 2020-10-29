@@ -8,8 +8,8 @@ from cv_bridge import CvBridge, CvBridgeError
 
 directory = '/home/fizzer/ros_ws/src/2020T1_competition/enph353/cnn-enph353/training_pictures'
 bridge = CvBridge()
-start_index_park = 0
-start_index_ped = 0
+start_index_park = 20
+start_index_ped = 20
 
 def add_zeros(digit):
 	length = len(str(digit))
@@ -22,26 +22,30 @@ def add_zeros(digit):
 
 	return zeros + str(digit)
 
-def image_name(char):
+def image_name(park_bool, ped_bool):
 	global start_index_park
 	global start_index_ped
 
-	if char == "q":
-		index = start_index_park
+	if park_bool == "y":
+		park_index = start_index_park
 		start_index_park += 1
-		return "park" + add_zeros(index) + "Y"
-	elif char == "w":
-		index = start_index_park
+		park_name = "park" + add_zeros(park_index) + "Y"
+
+	elif park_bool == "n":
+		park_index = start_index_park
 		start_index_park += 1
-		return "park" + add_zeros(index) + "N"
-	elif char == "e":
-		index = start_index_ped
+		park_name = "park" + add_zeros(park_index) + "N"
+
+	if ped_bool == "y":
+		ped_index = start_index_ped
 		start_index_ped += 1
-		return "ped" + add_zeros(index) + "Y"
-	elif char == "r":
-		index = start_index_ped
+		ped_name = "ped" + add_zeros(ped_index) + "Y"
+	elif ped_bool == "n":
+		ped_index = start_index_ped
 		start_index_ped += 1
-		return "ped" + add_zeros(index) + "N"
+		ped_name = "ped" + add_zeros(ped_index) + "N"
+
+	return [park_name, ped_name]
 
 def image_callback(data):
 	print("Recieved an image!")
@@ -51,16 +55,19 @@ def image_callback(data):
 	if str(newPicture) == "y":
 		return
 	else:
-		choice = raw_input('Legend:\n\nq: Park-Y\nw: Park-N\ne: Ped-Y\nr:Ped-N\n\nChoice:')
-		name = image_name(choice)
+		park_bool = raw_input("parking? (y/n)")
+		ped_bool = raw_input("pedestrian? (y/n)")
+		
+		potential_names = image_name(park_bool, ped_bool)
 
-		try:
-			image = bridge.imgmsg_to_cv2(data)
-			os.chdir(directory)
-			cv2.imwrite(name + ".jpg", image)
-			
-		except CvBridgeError, e:
-			print(e)
+		for name in potential_names:
+			try:
+				image = bridge.imgmsg_to_cv2(data)
+				os.chdir(directory)
+				cv2.imwrite(name + ".jpg", image)
+				
+			except CvBridgeError, e:
+				print(e)
 
 if __name__=="__main__":
     rospy.init_node('img_save', anonymous=True)
