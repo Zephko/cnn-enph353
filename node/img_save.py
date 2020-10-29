@@ -8,8 +8,8 @@ from cv_bridge import CvBridge, CvBridgeError
 
 directory = '/home/fizzer/ros_ws/src/2020T1_competition/enph353/cnn-enph353/training_pictures'
 bridge = CvBridge()
-start_index_park = 20
-start_index_ped = 20
+start_index_park = 131
+start_index_ped = 103
 
 def add_zeros(digit):
 	length = len(str(digit))
@@ -55,6 +55,12 @@ def image_callback(data):
 	if str(newPicture) == "y":
 		return
 	else:
+		image = bridge.imgmsg_to_cv2(data)
+		cv2.imshow('image', image)
+		cv2.waitKey(10)
+
+
+
 		park_bool = raw_input("parking? (y/n)")
 		ped_bool = raw_input("pedestrian? (y/n)")
 		
@@ -62,7 +68,7 @@ def image_callback(data):
 
 		for name in potential_names:
 			try:
-				image = bridge.imgmsg_to_cv2(data)
+				
 				os.chdir(directory)
 				cv2.imwrite(name + ".jpg", image)
 				
@@ -72,5 +78,5 @@ def image_callback(data):
 if __name__=="__main__":
     rospy.init_node('img_save', anonymous=True)
     rospy.Subscriber('/R1/pi_camera/image_raw', Image, image_callback)
-    rospy.Rate(10)
+    rospy.Rate(500)
     rospy.spin()
