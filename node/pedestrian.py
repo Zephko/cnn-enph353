@@ -24,7 +24,7 @@ def preprocess_dataset():
     #     validation_split= 0.2,
     #     subset="training",
     # )
-    idg = ImageDataGenerator(
+    train_set = ImageDataGenerator(
     featurewise_center=False,
     samplewise_center=False,
     featurewise_std_normalization=False,
@@ -42,16 +42,41 @@ def preprocess_dataset():
     cval=0.0,
     horizontal_flip=False,
     vertical_flip=False,
-    rescale=None,
+    rescale=1./255,
     preprocessing_function=None,
     data_format=None,
-    validation_split=0.0,
+    # validation_split=0.0,
+    # dtype="int",
+    )
+
+    val_set= ImageDataGenerator(
+    featurewise_center=False,
+    samplewise_center=False,
+    featurewise_std_normalization=False,
+    samplewise_std_normalization=False,
+    zca_whitening=False,
+    zca_epsilon=1e-06,
+    rotation_range=0,
+    width_shift_range=0.0,
+    height_shift_range=0.0,
+    brightness_range=None,
+    shear_range=0.0,
+    zoom_range=0.0,
+    channel_shift_range=0.0,
+    fill_mode="nearest",
+    cval=0.0,
+    horizontal_flip=False,
+    vertical_flip=False,
+    rescale=1./255,
+    preprocessing_function=None,
+    data_format=None,
+    # validation_split=0.0,
     # dtype="int",
     )
 
 
-    return idg.flow_from_directory(
-    '../training_pictures/ped_sets/',
+    train_gen = train_set.flow_from_directory(
+    '../training_pictures/ped_train/',
     # target_size=(1280, 720),
     target_size=(720, 1280),
     color_mode="rgb",
@@ -66,7 +91,26 @@ def preprocess_dataset():
     follow_links=False,
     subset=None,
     interpolation="nearest",
-)
+    )
+    
+    val_gen = val_set.flow_from_directory(
+    '../training_pictures/ped_val/',
+    # target_size=(1280, 720)
+    target_size=(720, 1280),
+    color_mode="rgb",
+    classes=['ped_N_val', 'ped_Y_val'],
+    class_mode="binary",
+    batch_size=32,
+    shuffle=True,
+    seed=None,
+    save_to_dir=None,
+    save_prefix="",
+    save_format="jpg",
+    follow_links=False,
+    subset=None,
+    interpolation="nearest",
+    )
+    return train_gen, val_gen
 
 def setupNN():
     model = models.Sequential()
@@ -82,20 +126,40 @@ def setupNN():
     model.add(layers.Flatten())
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(512, activation='relu'))
-    model.add(layers.Dense(2, activation="softmax"))
+    model.add(layers.Dense(1, activation="softmax"))
+
+    print(model.summary())
 
     LEARNING_RATE = 1e-4
     model.compile(loss='binary_crossentropy',
                     optimizer=optimizers.RMSprop(lr=LEARNING_RATE),
                     metrics=['acc'])
-    print(model.summary())
+    return model
+
+def fit_model(model, train_set, validation_set):
+    model_history = model.fit_generator(
+        train_set,
+        steps_per_epoch=2000,
+        epochs=20,
+        validation_data=validation_set,
+        validation_steps=800
+    )
+
+    plt.plot(model_history.history['loss'])
+    plt.plot(model_history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train loss', 'val loss'], loc='upper left')
+    plt.show()
 
 
 if __name__=="__main__":
-    # iterator = preprocess_dataset()
-    # x,y = iterator.next()
-    # for i in range(0, 1):
-    #     image = x[1]
-    #     plt.imshow(image)
-    #     plt.show()
-    setupNN()
+    train_set, val_set = preprocess_dataset()
+    x,y = train_set.next()
+    for i in range(0, 1):
+        image = x[1]
+        plt.imshow(image)
+        plt.show()
+    model = setupNN()
+    fit_model(model, train_set, val_set)
