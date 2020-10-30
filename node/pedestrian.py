@@ -69,15 +69,33 @@ def preprocess_dataset():
 )
 
 def setupNN():
-   model = models.Sequential()
-#    model.add() 
+    model = models.Sequential()
+    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(720, 1280, 3)))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Flatten())
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(512, activation='relu'))
+    model.add(layers.Dense(2, activation="softmax"))
+
+    LEARNING_RATE = 1e-4
+    model.compile(loss='binary_crossentropy',
+                    optimizer=optimizers.RMSprop(lr=LEARNING_RATE),
+                    metrics=['acc'])
+    print(model.summary())
 
 
 if __name__=="__main__":
-    iterator = preprocess_dataset()
-    print(iterator[0][0][0])
-    x,y = iterator.next()
-    for i in range(0, 1):
-        image = x[1]
-        plt.imshow(image)
-        plt.show()
+    # iterator = preprocess_dataset()
+    # x,y = iterator.next()
+    # for i in range(0, 1):
+    #     image = x[1]
+    #     plt.imshow(image)
+    #     plt.show()
+    setupNN()
