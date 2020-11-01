@@ -78,11 +78,11 @@ def preprocess_dataset():
     train_gen = train_set.flow_from_directory(
     '../training_pictures/ped_train/',
     # target_size=(1280, 720),
-    target_size=(720, 1280),
+    target_size=(150, 150),
     color_mode="rgb",
     classes=['ped_N', 'ped_Y'],
     class_mode="binary",
-    batch_size=32,
+    batch_size=16,
     shuffle=True,
     seed=None,
     save_to_dir=None,
@@ -96,11 +96,11 @@ def preprocess_dataset():
     val_gen = val_set.flow_from_directory(
     '../training_pictures/ped_val/',
     # target_size=(1280, 720)
-    target_size=(720, 1280),
+    target_size=(150, 150),
     color_mode="rgb",
     classes=['ped_N_val', 'ped_Y_val'],
     class_mode="binary",
-    batch_size=32,
+    batch_size=16,
     shuffle=True,
     seed=None,
     save_to_dir=None,
@@ -114,7 +114,7 @@ def preprocess_dataset():
 
 def setupNN():
     model = models.Sequential()
-    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(720, 1280, 3)))
+    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)))
     model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.Conv2D(64, (3, 3), activation='relu'))
@@ -137,12 +137,12 @@ def setupNN():
     return model
 
 def fit_model(model, train_set, validation_set):
+    print("lamb sauce")
     model_history = model.fit_generator(
         train_set,
-        steps_per_epoch=2000,
+        steps_per_epoch=50,
         epochs=20,
         validation_data=validation_set,
-        validation_steps=800
     )
 
     plt.plot(model_history.history['loss'])
