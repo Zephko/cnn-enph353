@@ -80,7 +80,7 @@ def preprocess_dataset():
     # target_size=(1280, 720),
     target_size=(150, 150),
     color_mode="rgb",
-    classes=['ped_N', 'ped_Y'],
+    # classes=['ped_N', 'ped_Y'],
     class_mode="binary",
     batch_size=16,
     shuffle=True,
@@ -98,7 +98,7 @@ def preprocess_dataset():
     # target_size=(1280, 720)
     target_size=(150, 150),
     color_mode="rgb",
-    classes=['ped_N_val', 'ped_Y_val'],
+    # classes=['ped_N_val', 'ped_Y_val'],
     class_mode="binary",
     batch_size=16,
     shuffle=True,
@@ -138,13 +138,15 @@ def setupNN():
 
 def fit_model(model, train_set, validation_set):
     print("lamb sauce")
+    STEP_SIZE_TRAIN=train_set.n//train_set.batch_size
+    STEP_SIZE_VALID=validation_set.n//validation_set.batch_size
     model_history = model.fit_generator(
         train_set,
-        steps_per_epoch=50,
+        steps_per_epoch=STEP_SIZE_TRAIN,
         epochs=20,
         validation_data=validation_set,
+        validation_steps=STEP_SIZE_VALID
     )
-
     plt.plot(model_history.history['loss'])
     plt.plot(model_history.history['val_loss'])
     plt.title('model loss')
@@ -157,8 +159,12 @@ def fit_model(model, train_set, validation_set):
 if __name__=="__main__":
     train_set, val_set = preprocess_dataset()
     x,y = train_set.next()
-    for i in range(0, 1):
-        image = x[1]
+
+
+    print(y)
+    for i in range(0, 16):
+        image = x[i]
+        print(i)
         plt.imshow(image)
         plt.show()
     model = setupNN()
