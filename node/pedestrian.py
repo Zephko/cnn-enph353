@@ -159,8 +159,6 @@ def fit_model(model, train_set, validation_set):
 if __name__=="__main__":
     train_set, val_set = preprocess_dataset()
     x,y = train_set.next()
-
-
     print(y)
     for i in range(0, 16):
         image = x[i]
