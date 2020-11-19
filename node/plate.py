@@ -26,26 +26,17 @@ class Plate_matcher():
 
 
     def get_plate(self):
-
-        #TODO run SIFT on the captured frame
-
         gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        # gray_frame = cv2.cvtColor(self.cam_img, cv2.COLOR_BGR2GRAY)
         gray_frame = cv2.cvtColor(self.cam_img, cv2.COLOR_BGR2GRAY)
         sift = cv2.xfeatures2d.SIFT_create()
         kp1, desc1 = sift.detectAndCompute(gray_img, None)
         kp2, desc2 = sift.detectAndCompute(gray_frame, None)
-        # img = cv2.drawKeypoints(gray_img, kp1, img)
-        # frame = cv2.drawKeypoints(gray_frame, kp2, frame) 
 
         index_params = dict(algorithm=0, trees=5)
         search_params = dict()
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(desc1, desc2, k=2)
 
-        # bf = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
-        # matches = bf.match(desc1, desc2)
-        # matches = sorted(matches, key = lambda x: x.distance)FLANN_INDEX_KDTREE = 1
         #find good matches
         good_points = []
         min_matches = 10
@@ -60,14 +51,10 @@ class Plate_matcher():
             matches_mask = mask.ravel().tolist()
 
             h, w = gray_img.shape
-            # h,w,d = img.shape
-            # pts = np.float32([[0, 0], [0, h], [w, h], [w, 0]]).reshape(-1, 1, 2)
             pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
             dst = cv2.perspectiveTransform(pts, matrix)
 
-            # print(dst)
             out_img = cv2.drawMatches(self.img, kp1, self.cam_img, kp2, good_points,self.cam_img)
-            # cv2.imshow("testing sift", out_img)
             plt.imshow(out_img)
             plt.show()
 
@@ -75,34 +62,15 @@ class Plate_matcher():
             plt.figure()
             plt.imshow(homography)
             plt.show()
-
-            #extact red square from homography
-
-            # corners = np.int32(dst)
-            # print(corners)
-            # print(corners[0][0][1])
-            # print(corners[0][1], corners[1][1], corners[0][0], corners[1][0])
-            # print(corners[0][0][1])
-            # print(corners[1][1])
-            # print(corners[0][0][0])
-            # sq = homography[corners[0][0][1]:corners[1][1], corners[0][0][0]:corners[1][0]]
-            # plt.figure()
-            # plt.imshow(sq)
-            # plt.show()
-
-            # cv2.imshow("Homography", homography)
-
-            # pixmap = self.convert_cv_to_pixmap(homography)
-            # self.live_image_label.setPixmap(pixmap)
-
-        else:
-            out_img = cv2.drawMatches(self.img, kp1, self.cam_img, kp2, good_points,self.cam_img)
-            # pixmap = self.convert_cv_to_pixmap(out_img)
-            # self.live_image_label.setPixmap(pixmap)
-            cv2.imshow("testing sift", out_img)
-
-        # pixmap = self.convert_cv_to_pixmap(out_img)
-        # self.live_image_label.setPixmap(pixmap)
+            
+            print(pts)
+            print(dst)
+            frame_pts = np.float32([[0,0],[0,300],[300,300], [300,0]])
+            M = cv2.getPerspectiveTransform(dst, frame_pts)
+            flat = cv2.warpPerspective(homography, M, (300,300))
+            plt.figure()
+            plt.imshow(flat)
+            plt.show()
 
 if __name__ == "__main__":
     plate_matcher = Plate_matcher(path)
