@@ -48,7 +48,7 @@ class Plate_matcher():
 
         #find good matches
         good_points = []
-        min_matches = 10
+        min_matches = 12
         for m, n in matches:
             if m.distance< 0.7 * n.distance:
                 good_points.append(m)
@@ -74,27 +74,21 @@ class Plate_matcher():
             # plt.show()
             
             frame_pts = np.float32([[0,0],[0,300],[300,300], [300,0]])
-            M = cv2.getPerspectiveTransform(dst, frame_pts)
-            transformed = cv2.warpPerspective(homography, M, (300,300))
-            # plt.figure()
-            # plt.imshow(flat)
-            # plt.show()
-            cv2.imwrite("{}_plate{}.jpg".format(self.num_plates, self.blue), transformed)
-            self.num_plates += 1
+            #check if transform is valid first, check that the 4 pts have right coords relative to each other
+            corners = list(dst)
+            print (corners)
+            c_pts = [pt[0] for pt in corners]
+            
+            if (c_pts[0][1] < c_pts[1][1] and c_pts[0][0] < c_pts[3][0] and
+                 c_pts[3][1] < c_pts[2][1] and c_pts[1][0] < c_pts[2][0] and 
+                 c_pts[0][0] < c_pts[2][0] and c_pts[3][1] < c_pts[1][1]): 
+                M = cv2.getPerspectiveTransform(dst, frame_pts)
+                transformed = cv2.warpPerspective(homography, M, (300,300))
+                cv2.imwrite("../sim_plates/{}_plate{}.jpg".format(self.num_plates, self.blue), transformed)
+                self.num_plates += 1
         
     def countBluePixels(self, img):
-        # boundaries = [
-        # # ([10, 10, 110], [30, 30, 140]),
-        # # ([0, 0 , 90], [10, 10, 110])
-        # # ([90, 90, 190], [105, 105, 210])
-        # ([0, 0, 90], [30, 30, 140]),
-        # ([90, 90, 190], [105, 105, 210])
-        # ]
         img = img[:, :1780/3]
-        # for (lower, upper) in boundaries:
-        #     lower = np.array(lower, dtype = "uint8")
-        #     upper = np.array(upper, dtype = "uint8")
-            # mask = cv2.inRange(img, lower, upper)
         mask1 = cv2.inRange(img, (0, 0, 90), (40, 40, 130))
         mask2 = cv2.inRange(img, (90, 90, 190), (105, 105, 210))
         mask = cv2.bitwise_or(mask1, mask2)
