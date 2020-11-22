@@ -9,23 +9,28 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 path = '../training_pictures/plate_sift/plate_blue.png'
+BLUE_THRESH = 50E3 
 
 class Plate_matcher():
 
-    def __init__(self, img_path):
+    def __init__(self, img_path, blue_threshold):
         self.img_path =img_path
         self.get_img_from_path()
         self.bridge = CvBridge()
+        self.blue_threshold = blue_threshold
+        self.num_plates = 0
 
     def get_img_from_path(self):
         self.img = cv2.imread(self.img_path)
 
     def read_camera(self, data):
         self.cam_img = self.bridge.imgmsg_to_cv2(data)
-        self.get_plate()
+        if self.countBluePixels(self.cam_img) > self.blue_threshold:
+            self.get_plate()
 
 
     def get_plate(self):
+        self.countBluePixels(self.cam_img)
         gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         gray_frame = cv2.cvtColor(self.cam_img, cv2.COLOR_BGR2GRAY)
         sift = cv2.xfeatures2d.SIFT_create()
@@ -45,6 +50,7 @@ class Plate_matcher():
                 good_points.append(m)
   
         if len(good_points) > min_matches:
+            
             query_pts = np.float32([kp1[m.queryIdx].pt for m in good_points]).reshape(-1, 1, 2)
             train_pts = np.float32([kp2[m.trainIdx].pt for m in good_points]).reshape(-1, 1, 2)
             matrix, mask = cv2.findHomography(query_pts, train_pts, cv2.RANSAC, 5.0)
@@ -55,25 +61,45 @@ class Plate_matcher():
             dst = cv2.perspectiveTransform(pts, matrix)
 
             out_img = cv2.drawMatches(self.img, kp1, self.cam_img, kp2, good_points,self.cam_img)
-            plt.imshow(out_img)
-            plt.show()
+            # plt.imshow(out_img)
+            # plt.show()
 
             homography = cv2.polylines(self.cam_img, [np.int32(dst)], True, (255, 0, 0), 3)
-            plt.figure()
-            plt.imshow(homography)
-            plt.show()
+            # plt.figure()
+            # plt.imshow(homography)
+            # plt.show()
             
-            print(pts)
-            print(dst)
             frame_pts = np.float32([[0,0],[0,300],[300,300], [300,0]])
             M = cv2.getPerspectiveTransform(dst, frame_pts)
             flat = cv2.warpPerspective(homography, M, (300,300))
-            plt.figure()
-            plt.imshow(flat)
-            plt.show()
+            # plt.figure()
+            # plt.imshow(flat)
+            # plt.show()
+            cv2.imwrite("{}_plate.jpg".format(self.num_plates), flat)
+            self.num_plates += 1
+        
+    def countBluePixels(self, img):
+        boundaries = [
+        ([17, 17, 117], [24, 24, 125]),
+        ([-1, -1 , 90], [10, 10, 110]),
+        ([90, 90, 190], [105, 105, 210])
+        ]
+        img = img[:, :1780/3]
+        for (lower, upper) in boundaries:
+            lower = np.array(lower, dtype = "uint8")
+            upper = np.array(upper, dtype = "uint8")
+            mask = cv2.inRange(img, lower, upper)
+            output = cv2.bitwise_and(img, img, mask = mask)
+        
+        out = np.count_nonzero(output)
+        print(out)
+        return out
+        # return np.count_nonzero(output)
+            
+
 
 if __name__ == "__main__":
-    plate_matcher = Plate_matcher(path)
+    plate_matcher = Plate_matcher(path, BLUE_THRESH)
     rospy.init_node('plate_matcher')
     rospy.Subscriber('R1/pi_camera/image_raw', Image, plate_matcher.read_camera)
     rospy.Rate(10)
