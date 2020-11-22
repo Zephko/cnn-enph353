@@ -25,12 +25,13 @@ class Plate_matcher():
 
     def read_camera(self, data):
         self.cam_img = self.bridge.imgmsg_to_cv2(data)
-        if self.countBluePixels(self.cam_img) > self.blue_threshold:
+        blue = self.countBluePixels(self.cam_img)
+        if blue > self.blue_threshold:
+        # if self.countBluePixels(self.cam_img) > self.blue_threshold:
+            self.blue = blue 
             self.get_plate()
 
-
     def get_plate(self):
-        self.countBluePixels(self.cam_img)
         gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         gray_frame = cv2.cvtColor(self.cam_img, cv2.COLOR_BGR2GRAY)
         sift = cv2.xfeatures2d.SIFT_create()
@@ -75,21 +76,26 @@ class Plate_matcher():
             # plt.figure()
             # plt.imshow(flat)
             # plt.show()
-            cv2.imwrite("{}_plate.jpg".format(self.num_plates), flat)
+            cv2.imwrite("{}_plate{}.jpg".format(self.num_plates, self.blue), flat)
             self.num_plates += 1
         
     def countBluePixels(self, img):
-        boundaries = [
-        ([17, 17, 117], [24, 24, 125]),
-        ([-1, -1 , 90], [10, 10, 110]),
-        ([90, 90, 190], [105, 105, 210])
-        ]
+        # boundaries = [
+        # # ([10, 10, 110], [30, 30, 140]),
+        # # ([0, 0 , 90], [10, 10, 110])
+        # # ([90, 90, 190], [105, 105, 210])
+        # ([0, 0, 90], [30, 30, 140]),
+        # ([90, 90, 190], [105, 105, 210])
+        # ]
         img = img[:, :1780/3]
-        for (lower, upper) in boundaries:
-            lower = np.array(lower, dtype = "uint8")
-            upper = np.array(upper, dtype = "uint8")
-            mask = cv2.inRange(img, lower, upper)
-            output = cv2.bitwise_and(img, img, mask = mask)
+        # for (lower, upper) in boundaries:
+        #     lower = np.array(lower, dtype = "uint8")
+        #     upper = np.array(upper, dtype = "uint8")
+            # mask = cv2.inRange(img, lower, upper)
+        mask1 = cv2.inRange(img, (0, 0, 90), (40, 40, 130))
+        mask2 = cv2.inRange(img, (90, 90, 190), (105, 105, 210))
+        mask = cv2.bitwise_or(mask1, mask2)
+        output = cv2.bitwise_and(img, img, mask = mask)
         
         out = np.count_nonzero(output)
         print(out)
