@@ -8,8 +8,9 @@ from matplotlib import pyplot as plt
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
-path = '../training_pictures/plate_sift/plate_blue.png'
-BLUE_THRESH = 50E3 
+# path = '../training_pictures/plate_sift/plate_blue.png'
+path = '../training_pictures/plate_sift/plate_no_border.png'
+BLUE_THRESH = 70E3 
 
 class Plate_matcher():
 
@@ -34,6 +35,8 @@ class Plate_matcher():
     def get_plate(self):
         gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         gray_frame = cv2.cvtColor(self.cam_img, cv2.COLOR_BGR2GRAY)
+        gray_img = gray_img[:, :1780/3]
+        gray_frame = gray_frame[:, :1780/3]
         sift = cv2.xfeatures2d.SIFT_create()
         kp1, desc1 = sift.detectAndCompute(gray_img, None)
         kp2, desc2 = sift.detectAndCompute(gray_frame, None)
@@ -72,11 +75,11 @@ class Plate_matcher():
             
             frame_pts = np.float32([[0,0],[0,300],[300,300], [300,0]])
             M = cv2.getPerspectiveTransform(dst, frame_pts)
-            flat = cv2.warpPerspective(homography, M, (300,300))
+            transformed = cv2.warpPerspective(homography, M, (300,300))
             # plt.figure()
             # plt.imshow(flat)
             # plt.show()
-            cv2.imwrite("{}_plate{}.jpg".format(self.num_plates, self.blue), flat)
+            cv2.imwrite("{}_plate{}.jpg".format(self.num_plates, self.blue), transformed)
             self.num_plates += 1
         
     def countBluePixels(self, img):
@@ -109,4 +112,5 @@ if __name__ == "__main__":
     rospy.init_node('plate_matcher')
     rospy.Subscriber('R1/pi_camera/image_raw', Image, plate_matcher.read_camera)
     rospy.Rate(10)
-    rospy.spin()
+    while not rospy.is_shutdown():
+        rospy.spin()
