@@ -11,7 +11,7 @@ from sensor_msgs.msg import Image as ImageMsg
 from cv_bridge import CvBridge, CvBridgeError
 from PIL import Image
 
-# path = '../training_pictures/plate_sift/plate_blue.png'
+# path = '../training_pictures/plate_sift/plate_blue.png'i
 path = '../training_pictures/plate_sift/plate6.png'
 BLUE_THRESH = 75E3 
 abc123 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -25,68 +25,53 @@ class Plate():
 
     def findROIS(self, plate):
 
-    ret, thresh = cv2.threshold(plate, 0, 255, cv2.THRESH_OTSU)
-    cv2.imshow('thresh', thresh)
+        plate = cv2.cvtColor(plate, cv2.COLOR_BGR2RGB)
+        gray_plate = cv2.cvtColor(plate, cv2.COLOR_BGR2GRAY)
+        ret, thresh = cv2.threshold(gray_plate, 0, 255, cv2.THRESH_OTSU)
+        # plt.imshow(thresh)
+        im2, ctrs, hier = cv2.findContours(thresh.copy(), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        sorted_ctrs = sorted(ctrs, key=lambda ctr: cv2.boundingRect(ctr)[0])
 
-    im2, ctrs, hier = cv2.findContours(thresh.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    sorted_ctrs = sorted(ctrs, key=lambda ctr: cv2.boundingRect(ctr)[0])
+        pad = 5 
+        area_low_bound = 500 
+        area_high_bound = 50000
+        common_parent = max([ctr[3] for ctr in hier[0]])
+        rois = []
+        print("# of Contours:{}".format(len(ctrs)))
+        for i, ctr in enumerate(ctrs):
+            x, y, w, h = cv2.boundingRect(ctr)
 
-    for i, ctr in enumerate(sorted_ctrs):
-        x, y, w, h = cv2.boundingRect(ctr)
-
-        roi = img[y:y + h, x:x + w]
-
-        area = w*h
-
-        if 250 < area < 900:
-            rect = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.imshow('rect', rect)
-
-    def slicePlate(self, plate):
-
-        lg_w = 108
-        lg_h = 65
-        lg_l_offset = 40
-        lg_top= 40
-        lg_bottom = 105
-
-        sm_w = 45
-        sm_h = 30
-        sm_l_offset = 35
-        sm_l2_offset = 173
-        sm_top = 155
-        sm_bottom = 185
-
-        chars = []
-
-        chars.append(plate[lg_top:lg_bottom, lg_l_offset: lg_l_offset + lg_w])
-        chars.append(plate[lg_top:lg_bottom, lg_l_offset + lg_w: lg_l_offset + 2*lg_w])
-        chars.append(plate[sm_top:sm_bottom, sm_l_offset:sm_l_offset + sm_w])
-        chars.append(plate[sm_top:sm_bottom, sm_l_offset+sm_w:sm_l_offset+2*sm_w])
-        chars.append(plate[sm_top:sm_bottom, sm_l2_offset:sm_l2_offset+sm_w])
-        chars.append(plate[sm_top:sm_bottom, sm_l2_offset+sm_w:sm_l2_offset+2*sm_w])
-        self.get_chars(chars)
+            area = w*h
+            
+            #requires parent to be the largest frame and have no children and be large enough to be a char
+            if hier[0][i][2] == -1 and hier[0][i][3] == common_parent and area_low_bound< area < area_high_bound:
+                # rect = cv2.rectangle(img, (x-pad, y-pad), (x + w+pad, y + h+pad), (0, 255, 0), 2)
+                roi = plate[y-pad:y + h+ pad, x-pad:x + w + pad]
+                rois.append((roi, cv2.boundingRect(ctr)[0]))
+                # plt.imshow(roi)
+                # plt.show()
+        sorted_rois = sorted(rois, key=lambda roi: roi[1])
+        # for roi in sorted_rois:
+            # plt.imshow(roi[0])
+            # plt.show()
+        print("# Recognized ROIs:{}".format(len(sorted_rois)))
+        self.get_chars([roi[0] for roi in sorted_rois])
 
     def get_chars(self, chars):
-        #scale to correct size for NN?
-        # for char in chars:
-        #     PIL_image = Image.fromarray(np.uint8(char)).convert('RGB')
-        #     PIL_image.resize((110, 135))
-        # model = models.load_model("../NN_character_recognition")
-        PIL_images = [Image.fromarray(np.uint8(char)).convert('RGB') for char in chars]
-        PIL_images = [img.resize((110, 135)) for img in PIL_images]
-        # imgs = [np.asarray(img) for img in PIL_images]
-        plt.imshow(PIL_images[0])
-        plt.show()
-        # chars  = [cv2.resize(char, (135, 110)) for char in chars]
+        #scale to correct size for NN
+        chars  = [cv2.resize(char, (110, 135)) for char in chars]
 
-        for img in PIL_images:
-            img_aug = np.expand_dims(img, axis=0)
-            y_predicted = self.model.predict(img_aug)[0]
-            max_val = np.amax(y_predicted)
-            i = list(y_predicted).index(max_val)
-            cv2.imwrite("../chars/{}_char.jpg".format(abc123[i]), np.asarray(img))
-
+        predictions = []
+        if len(chars) == 6:
+            for img in chars:
+                img_aug = np.expand_dims(img, axis=0)
+                y_predicted = self.model.predict(img_aug)[0]
+                max_val = np.amax(y_predicted)
+                i = list(y_predicted).index(max_val)
+                predictions.append(abc123[i])
+                cv2.imwrite("../chars/{}_char.jpg".format(abc123[i]), np.asarray(img))
+            print(predictions)
+            print("wrote {} chars to file".format(len(chars)))
 
 class Plate_matcher():
 
@@ -105,6 +90,7 @@ class Plate_matcher():
         blue = self.countBluePixels(self.cam_img)
         if blue > self.blue_threshold:
         # if self.countBluePixels(self.cam_img) > self.blue_threshold:
+            print("attempting sift now")
             self.blue = blue 
             self.get_plate()
 
@@ -146,7 +132,7 @@ class Plate_matcher():
             # plt.imshow(out_img)
             # plt.show()
 
-            homography = cv2.polylines(self.cam_img, [np.int32(dst)], True, (255, 0, 0), 3)
+            # homography = cv2.polylines(self.cam_img, [np.int32(dst)], True, (255, 0, 0), 3)
             # plt.figure()
             # plt.imshow(homography)
             # plt.show()
@@ -154,14 +140,15 @@ class Plate_matcher():
             frame_pts = np.float32([[0,0],[0,width],[height,width], [height,0]])
             #check if transform is valid first, check that the 4 pts have right coords relative to each other
             corners = list(dst)
-            print (corners)
+            # print (corners)
             c_pts = [pt[0] for pt in corners]
             
             if (c_pts[0][1] < c_pts[1][1] and c_pts[0][0] < c_pts[3][0] and
                  c_pts[3][1] < c_pts[2][1] and c_pts[1][0] < c_pts[2][0] and 
                  c_pts[0][0] < c_pts[2][0] and c_pts[3][1] < c_pts[1][1]): 
+                print("transform success. writing to file")
                 M = cv2.getPerspectiveTransform(dst, frame_pts)
-                transformed = cv2.warpPerspective(homography, M, (height,width))
+                transformed = cv2.warpPerspective(self.cam_img, M, (height,width))
                 cv2.imwrite("../sim_plates/{}_plate{}.jpg".format(self.num_plates, self.blue), transformed)
                 plate = Plate(transformed)
                 self.num_plates += 1
@@ -174,7 +161,7 @@ class Plate_matcher():
         output = cv2.bitwise_and(img, img, mask = mask)
         
         out = np.count_nonzero(output)
-        print(out)
+        # print(out)
         return out
         # return np.count_nonzero(output)
     
