@@ -10,9 +10,10 @@ from matplotlib import pyplot as plt
 from sensor_msgs.msg import Image as ImageMsg
 from cv_bridge import CvBridge, CvBridgeError
 from PIL import Image
+from std_msgs.msg import String
 
 # path = '../training_pictures/plate_sift/plate_blue.png'i
-path = '../training_pictures/plate_sift/plate6.png'
+path = '../training_pictures/plate_sift/plate2.png'
 BLUE_THRESH = 75E3 
 abc123 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -47,15 +48,33 @@ class Plate():
             if hier[0][i][2] == -1 and hier[0][i][3] == common_parent and area_low_bound< area < area_high_bound:
                 # rect = cv2.rectangle(img, (x-pad, y-pad), (x + w+pad, y + h+pad), (0, 255, 0), 2)
                 roi = plate[y-pad:y + h+ pad, x-pad:x + w + pad]
-                rois.append((roi, cv2.boundingRect(ctr)[0]))
+                rois.append((roi, cv2.boundingRect(ctr)))
+                # rois.append((roi, ctr))
                 # plt.imshow(roi)
                 # plt.show()
-        sorted_rois = sorted(rois, key=lambda roi: roi[1])
+        # origins = [roi[1] for roi in rois]
+        vert_sorted_rois = sorted(rois, key=lambda x: x[1][1])
+        stall = sorted(vert_sorted_rois[:2], key=lambda x:x[1][0])
+        for char in stall:
+            plt.imshow(char[0])
+            plt.show()
+        hor_sorted_rois = sorted(vert_sorted_rois[2:], key=lambda x: x[1][0])
+
+        for roi in hor_sorted_rois:
+            plt.imshow(roi[0])
+            plt.show()
+        # sorted_rois = sorted(rois, key=lambda x: self.get_contour_precedence(x[1], plate.shape[1]))
         # for roi in sorted_rois:
-            # plt.imshow(roi[0])
-            # plt.show()
+        #     plt.imshow(roi[0])
+        #     plt.show()
         print("# Recognized ROIs:{}".format(len(sorted_rois)))
         self.get_chars([roi[0] for roi in sorted_rois])
+    
+    def get_contour_precedence(self, contour, cols):
+        tolerance_factor = 10
+        # origin = cv2.boundingRect(contour)
+        origin = contour
+        return ((origin[1] // tolerance_factor) * tolerance_factor) * cols + origin[0]
 
     def get_chars(self, chars):
         #scale to correct size for NN
@@ -72,6 +91,9 @@ class Plate():
                 cv2.imwrite("../chars/{}_char.jpg".format(abc123[i]), np.asarray(img))
             print(predictions)
             print("wrote {} chars to file".format(len(chars)))
+    
+    def publish_plate(self, chars):
+        plate_publisher.publish("funMode,passwd,{},{}".format(stall_number, plate_number))
 
 class Plate_matcher():
 
@@ -174,6 +196,7 @@ if __name__ == "__main__":
     plate_matcher = Plate_matcher(path, BLUE_THRESH)
     rospy.init_node('plate_matcher')
     rospy.Subscriber('R1/pi_camera/image_raw', ImageMsg, plate_matcher.read_camera)
+    plate_publisher = rospy.Publisher('license_plate', String, queue_size=1)
     rospy.Rate(10)
     while not rospy.is_shutdown():
         rospy.spin()
