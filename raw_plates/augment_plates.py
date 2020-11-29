@@ -17,14 +17,19 @@ from keras.preprocessing.image import img_to_array
 from keras.preprocessing.image import ImageDataGenerator
 from matplotlib import pyplot
 
+import skimage
+from skimage.viewer import ImageViewer
+import sys
+from skimage import img_as_ubyte
+
 # from numpy import expand_dims
 # from keras.preprocessing.image import load_img
 # from keras.preprocessing.image import img_to_array
 # from keras.preprocessing.image import ImageDataGenerator
 
-raw_image_dir = "/home/fizzer/ros_ws/src/2020T1_competition/enph353/cnn-enph353/raw_plates/pictures"
-augmented_plates_dir = "/home/fizzer/ros_ws/src/2020T1_competition/enph353/cnn-enph353/augmented_plates"
-count = np.zeros(36)
+raw_image_dir = "/home/fizzer/ros_ws/src/2020T1_competition/enph353/cnn-enph353/raw_plates/raw_pictures"
+augmented_plates_dir = "/home/fizzer/ros_ws/src/2020T1_competition/enph353/cnn-enph353/blurred_augmented_plates"
+count = np.ones(36)*2800
 
 
 def load_images_from_folder(folder):
@@ -68,13 +73,12 @@ if __name__ == '__main__':
     	    batch = it.next()
     	    image = batch[0].astype('uint8')
 
-    	    new_count = update_count(unicode(image_names[index][j],'utf-8'))
-            path = augmented_plates_dir + "/" + image_names[index][j] + "_" + str(new_count).split(".")[0] + ".png"
-            cv2.imwrite(path, image)
+            blurred = skimage.filters.gaussian(image, sigma=(7,7), truncate=3.5, multichannel=True)
+            cv_image = img_as_ubyte(blurred)
 
-            new_count = update_count(unicode(image_names[index][j],'utf-8'))
-            path = augmented_plates_dir + "/" + image_names[index][j] + "_" + str(new_count).split(".")[0] + ".png"
-            cv2.imwrite(path, img_arr[j])
+    	    new_count = update_count(unicode(image_names[index][j],'utf-8'))
+            path = augmented_plates_dir + "/" + image_names[index][j] + "_" + str(new_count).split(".")[0] + ".png_blurred.png"
+            cv2.imwrite(path, cv_image)
 
     print(count)
 

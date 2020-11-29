@@ -20,6 +20,7 @@ paths = [path + 'plate2.png',
         path + 'plate4.png',
         path + 'plate5.png',
         path + 'plate6.png',
+        path + 'plate1.png',
         path + 'plate7.png',
         path + 'plate8.png']
 stall_order = [2, 3, 4, 5, 6, 1, 7, 8]
