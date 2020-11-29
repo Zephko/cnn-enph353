@@ -26,10 +26,15 @@ stall_order = [2, 3, 4, 5, 6, 1, 7, 8]
 BLUE_THRESH = 75E3 #75E3
 abc123 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 TIME_TO_PASS_CAR = 5
+do_sift = True
+# nn_model = models.load_model("../NN_character_recognition_blurred")
 
 class Plate():
+    # def __init__(self, img, car_num, model):
     def __init__(self, img, car_num):
-        self.model = models.load_model("../NN_character_recognition")
+        self.model = models.load_model("../NN_character_recognition_blurred")
+        # self.model = model
+        # self.model._make_predict_function()
         self.img = img
         self.car_num = car_num 
         self.findROIs(img)
@@ -65,13 +70,13 @@ class Plate():
                     # plt.show()
             # origins = [roi[1] for roi in rois]
             if len(rois) > 5:
+                print("enough regions of interest")
                 vert_sorted_rois = sorted(rois, key=lambda x: x[1][1])
                 stall = sorted(vert_sorted_rois[:2], key=lambda x:x[1][0])
                 # for char in stall:
                 #     plt.imshow(char[0])
                 #     plt.show()
                 # print(stall)
-                print(len(stall))
                 stall_num = stall[1][0]
                 hor_sorted_rois = sorted(vert_sorted_rois[2:], key=lambda x: x[1][0])
 
@@ -88,6 +93,7 @@ class Plate():
                     self.get_chars(stall_num, plate_nums)
 
     def get_chars(self, stall, plate):
+        print("making prediction")
         #scale to correct size for NN
         plate = [cv2.resize(char, (110, 135)) for char in plate]
         stall  = cv2.resize(stall, (110, 135)) 
@@ -100,7 +106,7 @@ class Plate():
             max_val = np.amax(y_predicted)
             i = list(y_predicted).index(max_val)
             predicted_plate_chars.append(abc123[i])
-            cv2.imwrite("../chars/{}_char_{}.jpg".format(abc123[i], self.car_num), np.asarray(img))
+            # cv2.imwrite("../chars/{}_char_{}.jpg".format(abc123[i], self.car_num), np.asarray(img))
         self.plate_nums = predicted_plate_chars
         
         #predict stall num
@@ -133,10 +139,12 @@ class Plate():
     #         print("wrote {} chars to file".format(len(chars)))
     
     def publish_plate(self):
+        global do_sift
         print(self.stall_num)
         print(str(self.plate_nums))
         # plate_publisher.publish("funMode,passwd,{},{}".format(self.stall_num, str(self.plate_nums)))
-        plate_publisher.publish("funMode,passwd,{},{}".format(stall_order[self.car_num], str(self.plate_nums)))
+        plate_publisher.publish("funMode,passwd,{},{}".format(stall_order[self.car_num], "".join(self.plate_nums)))
+        do_sift = False
 
 class Plate_matcher():
 
@@ -148,6 +156,9 @@ class Plate_matcher():
         self.blue_threshold = blue_threshold
         self.car_num = 0
         self.first_iter = True
+        global do_sift
+        self.last_frame_blue = False
+        # self.model = models.load_model("../NN_character_recognition_blurred")
 
     def get_template_from_path(self):
         self.template = cv2.imread(self.path_array[self.car_num])
@@ -156,17 +167,24 @@ class Plate_matcher():
     def read_camera(self, data):
         self.cam_img = self.bridge.imgmsg_to_cv2(data)
         blue = self.countBluePixels(self.cam_img)
-        if self.first_iter:
-            self.time_last_blue = time.time()
-            self.first_iter = False
+        # if self.first_iter:
+        #     self.time_last_blue = time.time()
+        #     self.first_iter = False
         if blue > self.blue_threshold:
-            if time.time() - self.time_last_blue > TIME_TO_PASS_CAR:
-                self.car_num += 1
-            self.time_last_blue = time.time()
+            # if time.time() - self.time_last_blue > TIME_TO_PASS_CAR:
+            #     self.car_num += 1
+            self.last_frame_blue = True
+            # self.time_last_blue = time.time()
         # if self.countBluePixels(self.cam_img) > self.blue_threshold:
             print("attempting sift now")
             self.blue = blue 
-            self.get_plate()
+            global do_sift
+            if do_sift:
+                self.get_plate()
+        elif self.last_frame_blue and blue < 10000:
+            self.last_frame_blue = False
+            do_sift = True
+            self.car_num += 1
 
     def get_plate(self):
         self.get_template_from_path()
@@ -221,7 +239,7 @@ class Plate_matcher():
             if (c_pts[0][1] < c_pts[1][1] and c_pts[0][0] < c_pts[3][0] and
                  c_pts[3][1] < c_pts[2][1] and c_pts[1][0] < c_pts[2][0] and 
                  c_pts[0][0] < c_pts[2][0] and c_pts[3][1] < c_pts[1][1]): 
-                # print("transform success. writing to file")
+                print("transform success. requesting prediction")
                 M = cv2.getPerspectiveTransform(dst, frame_pts)
                 transformed = cv2.warpPerspective(self.cam_img, M, (height,width))
                 # cv2.imwrite("../sim_plates/{}_plate{}.jpg".format(self.num_plates, self.blue), transformed)
@@ -235,7 +253,7 @@ class Plate_matcher():
         output = cv2.bitwise_and(img, img, mask = mask)
         
         out = np.count_nonzero(output)
-        # print(out)
+        print(out)
         return out
         # return np.count_nonzero(output)
     

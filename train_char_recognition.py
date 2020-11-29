@@ -11,10 +11,10 @@ from keras import optimizers
 from keras.utils import plot_model
 from keras import backend
 
-path_to_data = "augmented_plates/"
+path_to_data = "blurred_augmented_plates/"
 
 if __name__=="__main__":
-    files = os.listdir("augmented_plates")
+    files = os.listdir(path_to_data)
     
     #make datasets
     x_set = []
@@ -42,25 +42,26 @@ if __name__=="__main__":
     print("X shape: " + str(x_set.shape))
     print("Y shape: " + str(y_set.shape))
 
-    conv_model = models.Sequential()
-    conv_model.add(layers.Conv2D(32, (3, 3), activation='relu',
-                                input_shape=(135, 110, 3)))
-    conv_model.add(layers.MaxPooling2D((2, 2)))
-    conv_model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-    conv_model.add(layers.MaxPooling2D((2, 2)))
-    conv_model.add(layers.Conv2D(128, (3, 3), activation='relu'))
-    conv_model.add(layers.MaxPooling2D((2, 2)))
-    conv_model.add(layers.Conv2D(128, (3, 3), activation='relu'))
-    conv_model.add(layers.MaxPooling2D((2, 2)))
-    conv_model.add(layers.Flatten())
-    conv_model.add(layers.Dropout(0.5))
-    conv_model.add(layers.Dense(512, activation='relu'))
-    conv_model.add(layers.Dense(36, activation='softmax'))
-    conv_model.summary()
+    # conv_model = models.Sequential()
+    # conv_model.add(layers.Conv2D(32, (3, 3), activation='relu',
+    #                             input_shape=(135, 110, 3)))
+    # conv_model.add(layers.MaxPooling2D((2, 2)))
+    # conv_model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    # conv_model.add(layers.MaxPooling2D((2, 2)))
+    # conv_model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+    # conv_model.add(layers.MaxPooling2D((2, 2)))
+    # conv_model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+    # conv_model.add(layers.MaxPooling2D((2, 2)))
+    # conv_model.add(layers.Flatten())
+    # conv_model.add(layers.Dropout(0.5))
+    # conv_model.add(layers.Dense(512, activation='relu'))
+    # conv_model.add(layers.Dense(36, activation='softmax'))
+    # conv_model.summary()
+    conv_model = models.load_model('NN_character_recognition')
     LEARNING_RATE = 1e-4
-    conv_model.compile(loss='categorical_crossentropy',
-                    optimizer=optimizers.RMSprop(lr=LEARNING_RATE),
-                    metrics=['acc'])
+    # conv_model.compile(loss='categorical_crossentropy',
+    #                 optimizer=optimizers.RMSprop(lr=LEARNING_RATE),
+    #                 metrics=['acc'])
 
     history_conv = conv_model.fit(x_set, y_set, 
                             validation_split=VALIDATION_SPLIT, 
@@ -68,7 +69,7 @@ if __name__=="__main__":
                             batch_size=16)
 
     #save the model
-    conv_model.save('NN_character_recognition')
+    conv_model.save('NN_character_recognition_blurred')
 
     plt.plot(history_conv.history['loss'])
     plt.plot(history_conv.history['val_loss'])

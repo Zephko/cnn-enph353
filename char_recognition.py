@@ -13,8 +13,10 @@ from sklearn.metrics import confusion_matrix
 import seaborn
 
 if __name__=="__main__":
-    path_to_data = "augmented_plates/"
-    files = os.listdir("augmented_plates")
+    # path_to_data = "augmented_plates/"
+    path_to_data = "chars/"
+    # files = os.listdir("augmented_plates")
+    files = os.listdir(path_to_data)
     
     #make datasets
     abc123 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -26,13 +28,16 @@ if __name__=="__main__":
 
     model = models.load_model('NN_character_recognition')
     
-    predicted_chars = []
+    # predicted_chars = []
     for x_img in x_set:
         img_aug = np.expand_dims(x_img, axis=0)
         y_predicted = model.predict(img_aug)[0]
         max_val = np.amax(y_predicted)
         i = list(y_predicted).index(max_val)
-        predicted_chars.append(abc123[i])
-    cm = confusion_matrix(y_set, predicted_chars)
-    seaborn.heatmap(cm, cmap="YlGnBu")
-    plt.show()
+        plt.imshow(x_img)
+        print(abc123[i])
+        plt.show()
+        # predicted_chars.append(abc123[i])
+    # cm = confusion_matrix(y_set, predicted_chars)
+    # seaborn.heatmap(cm, cmap="YlGnBu")
+    # plt.show()
