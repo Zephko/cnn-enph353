@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from sensor_msgs.msg import Image as ImageMsg
 from cv_bridge import CvBridge, CvBridgeError
 from PIL import Image
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 
 # path = '../training_pictures/plate_sift/plate_blue.png'i
 path = '../training_pictures/plate_sift/'
@@ -154,7 +154,6 @@ class Plate_matcher():
         self.get_template_from_path()
         self.bridge = CvBridge()
         self.blue_threshold = blue_threshold
-        self.car_num = 0
         self.first_iter = True
         global do_sift
         self.last_frame_blue = False
@@ -185,6 +184,8 @@ class Plate_matcher():
             self.last_frame_blue = False
             do_sift = True
             self.car_num += 1
+            if self.car_num == 6:
+                outer_lap_pub.publish(True)
 
     def get_plate(self):
         self.get_template_from_path()
@@ -253,7 +254,7 @@ class Plate_matcher():
         output = cv2.bitwise_and(img, img, mask = mask)
         
         out = np.count_nonzero(output)
-        print(out)
+        # print(out)
         return out
         # return np.count_nonzero(output)
     
@@ -267,6 +268,7 @@ if __name__ == "__main__":
     rospy.init_node('plate_matcher')
     rospy.Subscriber('R1/pi_camera/image_raw', ImageMsg, plate_matcher.read_camera)
     plate_publisher = rospy.Publisher('license_plate', String, queue_size=1)
+    outer_lap_pub = rospy.Publisher('outer_lap_complete', Bool, queue_size=1)
     rospy.Rate(10)
     while not rospy.is_shutdown():
         rospy.spin()
