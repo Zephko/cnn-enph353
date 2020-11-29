@@ -31,8 +31,6 @@ class Plate():
 
         im2, ctrs, hier = cv2.findContours(thresh.copy(), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
         sorted_ctrs = sorted(ctrs, key=lambda ctr: cv2.boundingRect(ctr)[0])
-        print(hier)
-        print(len(ctrs))
 
         pad = 5 
         area_low_bound = 500 
@@ -48,23 +46,20 @@ class Plate():
             if hier[0][i][2] == -1 and hier[0][i][3] == common_parent and area_low_bound< area < area_high_bound:
                 # rect = cv2.rectangle(img, (x-pad, y-pad), (x + w+pad, y + h+pad), (0, 255, 0), 2)
                 roi = img[y-pad:y + h+ pad, x-pad:x + w + pad]
-                rois.append(roi)
-                plt.imshow(roi)
-                plt.show()
-        self.get_chars(rois)
+                rois.append((roi, cv2.boundingRect(ctr)[0]))
+                # plt.imshow(roi)
+                # plt.show()
+        sorted_rois = sorted(rois, key=lambda roi: roi[1])
+        for roi in sorted_rois:
+            plt.imshow(roi[0])
+            plt.show()
+        self.get_chars([roi[0] for roi in sorted_rois])
 
     def get_chars(self, chars):
-        #scale to correct size for NN?
-        # for char in chars:/)
-        #     PIL_image = Image.fromarray(np.uint8(char)).convert('RGB')
-        #     PIL_image.resize((110, 135))
-        PIL_images = [Image.fromarray(np.uint8(char)).convert('RGB') for char in chars]
-        PIL_images = [img.resize((110, 135)) for img in PIL_images]
-        plt.imshow(PIL_images[0])
-        plt.show()
-        # chars  = [cv2.resize(char, (135, 110)) for char in chars]
+        #scale to correct size for NN
+        chars  = [cv2.resize(char, (110, 135)) for char in chars]
 
-        for img in PIL_images:
+        for img in chars:
             img_aug = np.expand_dims(img, axis=0)
             y_predicted = model.predict(img_aug)[0]
             max_val = np.amax(y_predicted)
