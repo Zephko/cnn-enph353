@@ -57,7 +57,7 @@ if __name__=="__main__":
     # conv_model.add(layers.Dense(512, activation='relu'))
     # conv_model.add(layers.Dense(36, activation='softmax'))
     # conv_model.summary()
-    conv_model = models.load_model('NN_character_recognition')
+    conv_model = models.load_model('NN_character_recognition_blurred')
     LEARNING_RATE = 1e-4
     # conv_model.compile(loss='categorical_crossentropy',
     #                 optimizer=optimizers.RMSprop(lr=LEARNING_RATE),
@@ -69,7 +69,7 @@ if __name__=="__main__":
                             batch_size=16)
 
     #save the model
-    conv_model.save('NN_character_recognition_blurred')
+    conv_model.save('NN_character_recognition_blurred_2')
 
     plt.plot(history_conv.history['loss'])
     plt.plot(history_conv.history['val_loss'])
