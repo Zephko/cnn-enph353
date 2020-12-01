@@ -269,6 +269,9 @@ class Plate_matcher():
         mask2 = cv2.inRange(img, (90, 90, 190), (105, 105, 210))
         mask = cv2.bitwise_or(mask1, mask2)
         output = cv2.bitwise_and(img, img, mask = mask)
+
+        cv2.imshow("done_outside",output)
+        cv2.waitKey(1)
         
         out = np.count_nonzero(output)
         print(out)
