@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from sensor_msgs.msg import Image as ImageMsg
 from cv_bridge import CvBridge, CvBridgeError
 from PIL import Image
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String, Bool, Int32
 
 # path = '../training_pictures/plate_sift/plate_blue.png'i
 path = '../training_pictures/plate_sift/'
@@ -144,6 +144,9 @@ class Plate():
         print(self.stall_num)
         print(str(self.plate_nums))
         # plate_publisher.publish("funMode,passwd,{},{}".format(self.stall_num, str(self.plate_nums)))
+        if self.car_num == 5:
+            outer_lap_pub.publish(True)
+
         plate_publisher.publish("funMode,passwd,{},{}".format(stall_order[self.car_num], "".join(self.plate_nums)))
         do_sift = False
 
@@ -185,8 +188,11 @@ class Plate_matcher():
             self.last_frame_blue = False
             do_sift = True
             self.car_num += 1
-            if self.car_num == 6:
-                outer_lap_pub.publish(True)
+            if self.car_num == 8:
+                rospy.sleep(2)
+                plate_publisher.publish("funMode,passwd,-1,XR58")
+            # if self.car_num == 6:
+            #     outer_lap_pub.publish(True)
 
     def get_plate(self):
         self.get_template_from_path()
@@ -194,8 +200,17 @@ class Plate_matcher():
         gray_frame = cv2.cvtColor(self.cam_img, cv2.COLOR_BGR2GRAY)
         height = np.shape(gray_template)[0]
         width = np.shape(gray_template)[1]
-        gray_template = gray_template[:, :1780/3]
-        gray_frame = gray_frame[:, :1780/3]
+        if self.car_num < 6:
+            # gray_template = gray_template[:, :1780/3]
+            gray_frame = gray_frame[:, :1780/3]
+            print(gray_frame.shape)
+        else:
+            # gray_template = gray_template[:, 1780*2/3:]
+            gray_frame = gray_frame[:, 1780/2:]
+            print(gray_frame.shape)
+            # plt.imshow(gray_frame)
+            # plt.show()
+
         sift = cv2.xfeatures2d.SIFT_create()
         kp1, desc1 = sift.detectAndCompute(gray_template, None)
         kp2, desc2 = sift.detectAndCompute(gray_frame, None)
@@ -248,14 +263,18 @@ class Plate_matcher():
                 plate = Plate(transformed, self.car_num)
         
     def countBluePixels(self, img):
-        img = img[:, :1780/3]
+        if self.car_num < 6:
+            img = img[:, :1780/3]
+        else:
+            img = img[:, 1780/2:]
         mask1 = cv2.inRange(img, (0, 0, 90), (40, 40, 130))
         mask2 = cv2.inRange(img, (90, 90, 190), (105, 105, 210))
         mask = cv2.bitwise_or(mask1, mask2)
         output = cv2.bitwise_and(img, img, mask = mask)
         
         out = np.count_nonzero(output)
-        # print(out)
+        print(out)
+        blue_pub.publish(out)
         return out
         # return np.count_nonzero(output)
     
@@ -270,6 +289,7 @@ if __name__ == "__main__":
     rospy.Subscriber('R1/pi_camera/image_raw', ImageMsg, plate_matcher.read_camera)
     plate_publisher = rospy.Publisher('license_plate', String, queue_size=1)
     outer_lap_pub = rospy.Publisher('outer_lap_complete', Bool, queue_size=1)
+    blue_pub = rospy.Publisher('blue', Int32, queue_size=1)
     rospy.Rate(10)
     while not rospy.is_shutdown():
         rospy.spin()
