@@ -22,6 +22,7 @@ paths = [path + 'plate2.png',
         path + 'plate6.png',
         path + 'plate1.png',
         path + 'plate7.png',
+        path + 'plate8.png',
         path + 'plate8.png']
 stall_order = [2, 3, 4, 5, 6, 1, 7, 8]
 BLUE_THRESH = 75E3 #75E3
@@ -101,13 +102,19 @@ class Plate():
         predicted_plate_chars = []
         # if len(chars) == 6:
         #predict plate nums
-        for img in plate:
+        for i, img in enumerate(plate):
             img_aug = np.expand_dims(img, axis=0)
             y_predicted = self.model.predict(img_aug)[0]
-            max_val = np.amax(y_predicted)
+            if i < 2:
+                y_predicted_letters = y_predicted[:26]
+                max_val = np.amax(y_predicted_letters)
+            else:
+                y_predicted_nums = y_predicted[26:]
+                max_val = np.amax(y_predicted_nums)
+            # max_val = np.amax(y_predicted)
             i = list(y_predicted).index(max_val)
             predicted_plate_chars.append(abc123[i])
-            # cv2.imwrite("../chars/{}_char_{}.jpg".format(abc123[i], self.car_num), np.asarray(img))
+            # cv2.imwrite("../chars/{}_char_{}.jpg".format(abc123[i], self.car_num), np.asarray(img)
         self.plate_nums = predicted_plate_chars
         
         #predict stall num
