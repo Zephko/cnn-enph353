@@ -33,7 +33,7 @@ do_sift = True
 class Plate():
     # def __init__(self, img, car_num, model):
     def __init__(self, img, car_num):
-        self.model = models.load_model("../NN_character_recognition_blurred_2")
+        self.model = models.load_model("../NN_character_recognition_blurred")
         # self.model = model
         # self.model._make_predict_function()
         self.img = img
@@ -180,15 +180,15 @@ class Plate_matcher():
             # if time.time() - self.time_last_blue > TIME_TO_PASS_CAR:
             #     self.car_num += 1
             self.last_frame_blue = True
-            blue_publisher.publish(True)
             # self.time_last_blue = time.time()
         # if self.countBluePixels(self.cam_img) > self.blue_threshold:
             print("attempting sift now")
+            blue_pub.publish(True)
             self.blue = blue 
             global do_sift
             if do_sift:
                 self.get_plate()
-        elif self.last_frame_blue and blue < 20000:
+        elif self.last_frame_blue and blue < 8000:
             self.last_frame_blue = False
             do_sift = True
             self.car_num += 1
@@ -207,12 +207,9 @@ class Plate_matcher():
 
         sift = cv2.xfeatures2d.SIFT_create()
 
-        if self.done_outside:
-            gray_template = gray_template[:, int((2.0/3)*1280):]
-            gray_frame = gray_frame[:, int((2.0/3)*1280):]
-        else:
-            gray_template = gray_template[:, :1280/2]
-            gray_frame = gray_frame[:, :1280/2]
+        gray_template = gray_template[:, :]
+        gray_frame = gray_frame[:, :]
+
         kp1, desc1 = sift.detectAndCompute(gray_template, None)
         kp2, desc2 = sift.detectAndCompute(gray_frame, None)
 
@@ -267,7 +264,7 @@ class Plate_matcher():
         if self.done_outside:
             img = img[:,int((2.0/3)*1280):]
         else:
-            img = img[:, :1780/3]
+            img = img[:, :1780/2]
         mask1 = cv2.inRange(img, (0, 0, 90), (40, 40, 130))
         mask2 = cv2.inRange(img, (90, 90, 190), (105, 105, 210))
         mask = cv2.bitwise_or(mask1, mask2)
@@ -275,7 +272,6 @@ class Plate_matcher():
         
         out = np.count_nonzero(output)
         print(out)
-        blue_pub.publish(out)
         return out
         # return np.count_nonzero(output)
     
@@ -290,7 +286,8 @@ if __name__ == "__main__":
     rospy.Subscriber('R1/pi_camera/image_raw', ImageMsg, plate_matcher.read_camera)
     plate_publisher = rospy.Publisher('license_plate', String, queue_size=1)
     outer_lap_pub = rospy.Publisher('outer_lap_complete', Bool, queue_size=1)
-    blue_publisher = rospy.Publisher('over_blue_thresh', Bool, queue_size=1)
+    blue_pub = rospy.Publisher('blue_stop', Bool, queue_size=1)
+    
     rospy.Rate(10)
     while not rospy.is_shutdown():
         rospy.spin()
