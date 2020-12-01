@@ -197,9 +197,17 @@ class Plate_matcher():
         gray_frame = cv2.cvtColor(self.cam_img, cv2.COLOR_BGR2GRAY)
         height = np.shape(gray_template)[0]
         width = np.shape(gray_template)[1]
-        gray_template = gray_template[:, :1780/3]
-        gray_frame = gray_frame[:, :1780/3]
+        
+
+
         sift = cv2.xfeatures2d.SIFT_create()
+
+        if self.done_outside:
+            gray_template = gray_template[:, int((2.0/3)*1280):]
+            gray_frame = gray_frame[:, int((2.0/3)*1280):]
+        else:
+            gray_template = gray_template[:, :1280/3]
+            gray_frame = gray_frame[:, :1280/3]
         kp1, desc1 = sift.detectAndCompute(gray_template, None)
         kp2, desc2 = sift.detectAndCompute(gray_frame, None)
 
