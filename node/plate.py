@@ -175,6 +175,8 @@ class Plate_matcher():
         #     self.time_last_blue = time.time()
         #     self.first_iter = False
         if blue > self.blue_threshold:
+            if self.car_num == 5:
+                outer_lap_pub.publish(True)
             # if time.time() - self.time_last_blue > TIME_TO_PASS_CAR:
             #     self.car_num += 1
             self.last_frame_blue = True
@@ -192,7 +194,7 @@ class Plate_matcher():
             self.car_num += 1
             if self.car_num == 6:
                 self.done_outside = True
-                outer_lap_pub.publish(True)
+                # outer_lap_pub.publish(True)
 
     def get_plate(self):
         self.get_template_from_path()
@@ -200,18 +202,17 @@ class Plate_matcher():
         gray_frame = cv2.cvtColor(self.cam_img, cv2.COLOR_BGR2GRAY)
         height = np.shape(gray_template)[0]
         width = np.shape(gray_template)[1]
-        if self.car_num < 6:
-            # gray_template = gray_template[:, :1780/3]
-            gray_frame = gray_frame[:, :1780/3]
-            print(gray_frame.shape)
-        else:
-            # gray_template = gray_template[:, 1780*2/3:]
-            gray_frame = gray_frame[:, 1780/2:]
-            print(gray_frame.shape)
-            # plt.imshow(gray_frame)
-            # plt.show()
+        
+
 
         sift = cv2.xfeatures2d.SIFT_create()
+
+        if self.done_outside:
+            gray_template = gray_template[:, int((2.0/3)*1280):]
+            gray_frame = gray_frame[:, int((2.0/3)*1280):]
+        else:
+            gray_template = gray_template[:, :1280/2]
+            gray_frame = gray_frame[:, :1280/2]
         kp1, desc1 = sift.detectAndCompute(gray_template, None)
         kp2, desc2 = sift.detectAndCompute(gray_frame, None)
 
