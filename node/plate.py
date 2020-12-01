@@ -269,7 +269,7 @@ class Plate_matcher():
         
     def countBluePixels(self, img):
         if self.done_outside:
-            img = img[:,int((2.0/3)*1280):]
+            img = img[:,int((1.0/2)*1280):]
         else:
             img = img[:, :1780/2]
         mask1 = cv2.inRange(img, (0, 0, 90), (40, 40, 130))
