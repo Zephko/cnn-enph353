@@ -33,7 +33,7 @@ do_sift = True
 class Plate():
     # def __init__(self, img, car_num, model):
     def __init__(self, img, car_num):
-        self.model = models.load_model("../NN_character_recognition_blurred")
+        self.model = models.load_model("../NN_character_recognition_blurred_2")
         # self.model = model
         # self.model._make_predict_function()
         self.img = img
@@ -158,6 +158,7 @@ class Plate_matcher():
         self.first_iter = True
         global do_sift
         self.last_frame_blue = False
+        self.done_outside = False
         # self.model = models.load_model("../NN_character_recognition_blurred")
 
     def get_template_from_path(self):
@@ -174,6 +175,7 @@ class Plate_matcher():
             # if time.time() - self.time_last_blue > TIME_TO_PASS_CAR:
             #     self.car_num += 1
             self.last_frame_blue = True
+            blue_publisher.publish(True)
             # self.time_last_blue = time.time()
         # if self.countBluePixels(self.cam_img) > self.blue_threshold:
             print("attempting sift now")
@@ -181,11 +183,12 @@ class Plate_matcher():
             global do_sift
             if do_sift:
                 self.get_plate()
-        elif self.last_frame_blue and blue < 10000:
+        elif self.last_frame_blue and blue < 20000:
             self.last_frame_blue = False
             do_sift = True
             self.car_num += 1
             if self.car_num == 6:
+                self.done_outside = True
                 outer_lap_pub.publish(True)
 
     def get_plate(self):
@@ -248,7 +251,10 @@ class Plate_matcher():
                 plate = Plate(transformed, self.car_num)
         
     def countBluePixels(self, img):
-        img = img[:, :1780/3]
+        if self.done_outside:
+            img = img[:,int((2.0/3)*1280):]
+        else:
+            img = img[:, :1780/3]
         mask1 = cv2.inRange(img, (0, 0, 90), (40, 40, 130))
         mask2 = cv2.inRange(img, (90, 90, 190), (105, 105, 210))
         mask = cv2.bitwise_or(mask1, mask2)
@@ -270,6 +276,7 @@ if __name__ == "__main__":
     rospy.Subscriber('R1/pi_camera/image_raw', ImageMsg, plate_matcher.read_camera)
     plate_publisher = rospy.Publisher('license_plate', String, queue_size=1)
     outer_lap_pub = rospy.Publisher('outer_lap_complete', Bool, queue_size=1)
+    blue_publisher = rospy.Publisher('over_blue_thresh', Bool, queue_size=1)
     rospy.Rate(10)
     while not rospy.is_shutdown():
         rospy.spin()
