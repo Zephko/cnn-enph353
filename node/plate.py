@@ -19,7 +19,7 @@ paths = [path + 'plate2.png',
         path + 'plate3.png',
         path + 'plate4_test.png',
         path + 'plate5.png',
-        path + 'plate6_worst.png',
+        path + 'plate6.png',
         path + 'plate1_test.png',
         path + 'plate7_test.png',
         path + 'plate8.png',
@@ -38,7 +38,7 @@ class Plate():
         # self.model = model
         # self.model._make_predict_function()
         self.img = img
-        self.car_num = car_num 
+        self.car_num = car_num
         self.findROIs(img)
 
     def findROIs(self, plate):
@@ -51,7 +51,7 @@ class Plate():
         sorted_ctrs = sorted(ctrs, key=lambda ctr: cv2.boundingRect(ctr)[0])
 
         pad = 5 
-        area_low_bound = 500 
+        area_low_bound = 400 
         area_high_bound = 50000
         common_parent = max([ctr[3] for ctr in hier[0]])
         rois = []
@@ -64,12 +64,16 @@ class Plate():
                 
                 #requires parent to be the largest frame and have no children and be large enough to be a char
                 if hier[0][i][2] == -1 and hier[0][i][3] == common_parent and area_low_bound< area < area_high_bound:
-                    # rect = cv2.rectangle(img, (x-pad, y-pad), (x + w+pad, y + h+pad), (0, 255, 0), 2)
+                    # rect = cv2.rectangle(plate, (x-pad, y-pad), (x + w+pad, y + h+pad), (0, 255, 0), 2)
+                    # plt.imshow('rect', rect)
+                    # plt.show()
                     roi = plate[y-pad:y + h+ pad, x-pad:x + w + pad]
                     rois.append((roi, cv2.boundingRect(ctr)))
+
+
+
                     # rois.append((roi, ctr))
-                    # plt.imshow(roi)
-                    # plt.show()
+                    
             # origins = [roi[1] for roi in rois]
             if len(rois) > 5:
                 print("enough regions of interest")
@@ -178,8 +182,13 @@ class Plate_matcher():
         print("using" + self.path_array[self.car_num])
 
     def read_camera(self, data):
+        global BLUE_THRESH
         self.cam_img = self.bridge.imgmsg_to_cv2(data)
         blue = self.countBluePixels(self.cam_img)
+        
+
+
+
         # if self.first_iter:
         #     self.time_last_blue = time.time()
         #     self.first_iter = False
@@ -219,8 +228,14 @@ class Plate_matcher():
 
         sift = cv2.xfeatures2d.SIFT_create()
 
-        gray_template = gray_template[:, :]
-        gray_frame = gray_frame[:, :]
+        if self.car_num < 6:
+            # gray_template = gray_template[:, :1780/3]
+            gray_frame = gray_frame[:, :1780/3]
+            print(gray_frame.shape)
+        # else:
+        #     # gray_template = gray_template[:, 1780*2/3:]
+        #     gray_frame = gray_frame[:, :]
+        #     print(gray_frame.shape)
 
         kp1, desc1 = sift.detectAndCompute(gray_template, None)
         kp2, desc2 = sift.detectAndCompute(gray_frame, None)
@@ -274,10 +289,10 @@ class Plate_matcher():
                 plate = Plate(transformed, self.car_num)
         
     def countBluePixels(self, img):
-        if self.done_outside:
-            img = img[:,int((1.0/2)*1280):]
-        else:
+        if self.car_num < 6:
             img = img[:, :1780/3]
+        else:
+            img = img[:, 1280/2:]
         mask1 = cv2.inRange(img, (0, 0, 90), (40, 40, 130))
         mask2 = cv2.inRange(img, (90, 90, 190), (105, 105, 210))
         mask = cv2.bitwise_or(mask1, mask2)
