@@ -19,9 +19,9 @@ paths = [path + 'plate2.png',
         path + 'plate3.png',
         path + 'plate4_test.png',
         path + 'plate5.png',
-        path + 'plate6_test.png',
+        path + 'plate6_temp_temp.png',
         path + 'plate1_test.png',
-        path + 'plate7.png',
+        path + 'plate7_test.png',
         path + 'plate8.png',
         path + 'plate8.png']
 stall_order = [2, 3, 4, 5, 6, 1, 7, 8]
@@ -201,6 +201,7 @@ class Plate_matcher():
             self.car_num += 1
             if self.car_num == 6:
                 self.done_outside = True
+                self.blue_threshold = 150E3
                 # outer_lap_pub.publish(True)
 
     def get_plate(self):
@@ -272,7 +273,7 @@ class Plate_matcher():
         if self.done_outside:
             img = img[:,int((1.0/2)*1280):]
         else:
-            img = img[:, :1780/2]
+            img = img[:, :1780/3]
         mask1 = cv2.inRange(img, (0, 0, 90), (40, 40, 130))
         mask2 = cv2.inRange(img, (90, 90, 190), (105, 105, 210))
         mask = cv2.bitwise_or(mask1, mask2)
