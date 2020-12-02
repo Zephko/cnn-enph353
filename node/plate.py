@@ -17,15 +17,15 @@ from std_msgs.msg import String, Bool, Int32
 path = '../training_pictures/plate_sift/'
 paths = [path + 'plate2.png',
         path + 'plate3.png',
-        path + 'plate4.png',
+        path + 'plate4_test.png',
         path + 'plate5.png',
-        path + 'plate6.png',
-        path + 'plate1.png',
+        path + 'plate6_test.png',
+        path + 'plate1_test.png',
         path + 'plate7.png',
         path + 'plate8.png',
         path + 'plate8.png']
 stall_order = [2, 3, 4, 5, 6, 1, 7, 8]
-BLUE_THRESH = 75E3 #75E3
+BLUE_THRESH = 95E3 #75E3
 abc123 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 TIME_TO_PASS_CAR = 5
 do_sift = True
@@ -262,6 +262,7 @@ class Plate_matcher():
                  c_pts[3][1] < c_pts[2][1] and c_pts[1][0] < c_pts[2][0] and 
                  c_pts[0][0] < c_pts[2][0] and c_pts[3][1] < c_pts[1][1]): 
                 print("transform success. requesting prediction")
+
                 M = cv2.getPerspectiveTransform(dst, frame_pts)
                 transformed = cv2.warpPerspective(self.cam_img, M, (height,width))
                 # cv2.imwrite("../sim_plates/{}_plate{}.jpg".format(self.num_plates, self.blue), transformed)
@@ -277,8 +278,6 @@ class Plate_matcher():
         mask = cv2.bitwise_or(mask1, mask2)
         output = cv2.bitwise_and(img, img, mask = mask)
 
-        cv2.imshow("done_outside",output)
-        cv2.waitKey(1)
         
         out = np.count_nonzero(output)
         print(out)
