@@ -34,7 +34,7 @@ do_sift = True
 class Plate():
     # def __init__(self, img, car_num, model):
     def __init__(self, img, car_num):
-        self.model = models.load_model("../NN_character_recognition_blurred_cgoq")
+        self.model = models.load_model("../NN_character_recognition_blurred")
         # self.model = model
         # self.model._make_predict_function()
         self.img = img
