@@ -203,7 +203,8 @@ class Plate_matcher():
                 self.done_outside = True
                 # outer_lap_pub.publish(True)
             if self.car_num == 8:
-                plate_publisher.publish("funMode,passwd,-1,XR58"
+                rospy.sleep(2)
+                plate_publisher.publish("funMode,passwd,-1,XR58")
     def get_plate(self):
         self.get_template_from_path()
         gray_template = cv2.cvtColor(self.template, cv2.COLOR_BGR2GRAY)
