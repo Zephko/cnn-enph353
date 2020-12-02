@@ -34,7 +34,7 @@ do_sift = True
 class Plate():
     # def __init__(self, img, car_num, model):
     def __init__(self, img, car_num):
-        self.model = models.load_model("../NN_character_recognition_blurred")
+        self.model = models.load_model("../NN_character_recognition_blurred_cgoq")
         # self.model = model
         # self.model._make_predict_function()
         self.img = img
@@ -97,6 +97,8 @@ class Plate():
     def get_chars(self, stall, plate):
         print("making prediction")
         #scale to correct size for NN
+        if len(plate) == 5:
+            plate = [num for i, num in enumerate(plate) if i != 2]
         plate = [cv2.resize(char, (110, 135)) for char in plate]
         stall  = cv2.resize(stall, (110, 135)) 
         predicted_plate_chars = []
