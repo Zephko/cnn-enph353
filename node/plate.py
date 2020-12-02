@@ -19,7 +19,7 @@ paths = [path + 'plate2.png',
         path + 'plate3.png',
         path + 'plate4_test.png',
         path + 'plate5.png',
-        path + 'plate6.png',
+        path + 'plate6_worst.png',
         path + 'plate1_test.png',
         path + 'plate7_test.png',
         path + 'plate8.png',
@@ -201,7 +201,7 @@ class Plate_matcher():
             self.car_num += 1
             if self.car_num == 6:
                 self.done_outside = True
-                self.blue_threshold = 150E3
+                self.blue_threshold = 120E3
                 # outer_lap_pub.publish(True)
             if self.car_num == 8:
                 rospy.sleep(2)
