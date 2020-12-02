@@ -97,6 +97,8 @@ class Plate():
     def get_chars(self, stall, plate):
         print("making prediction")
         #scale to correct size for NN
+        if len(plate) == 5:
+            plate = [num for i, num in enumerate(plate) if i != 2]
         plate = [cv2.resize(char, (110, 135)) for char in plate]
         stall  = cv2.resize(stall, (110, 135)) 
         predicted_plate_chars = []
